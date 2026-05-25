@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img src="paper/image/fig_teaser.png" width="90%" alt="HQMQ + Med3x matches fp16 quality at ~5 bits/element across Mistral-7B, Llama-3-8B, Qwen2.5-7B, Qwen3-8B; naive int4 explodes by 12-2300x on outlier-heavy Qwen models.">
+  <img src="asset/fig_teaser.png" width="90%" alt="HQMQ + Med3x matches fp16 quality at ~5 bits/element across Mistral-7B, Llama-3-8B, Qwen2.5-7B, Qwen3-8B; naive int4 explodes by 12-2300x on outlier-heavy Qwen models.">
 </p>
 
 **Calibration-free** KV cache quantization that quantizes each 4-element K/V chunk's direction to the product $q_p \cdot q_s$, with $q_p \in 24$-cell (Hurwitz group) and $q_s$ a random unit quaternion. **5× KV memory compression** at $\Delta \leq 0.10$ ppl points from fp16 on five modern open LLMs, matches calibrated **KIVI-4** at **16% fewer bits without any calibration pass**, and ships a fused Triton attention kernel that decodes from the compressed cache in-place — within $\sim 2.5\times$ of dense fp16 SDPA at all tested context lengths.
@@ -61,13 +61,13 @@ for each (layer, head, K|V), per batch:
 $\sim 1$–3% of chunks extracted at $C{=}3$, adding $\sim 0.15$ bits/element.
 
 <p align="center">
-  <img src="paper/image/fig6_outlier_diag.png" width="88%" alt="Per-layer K-chunk outlier ratio for Mistral-7B vs Qwen2.5-7B.">
+  <img src="asset/fig6_outlier_diag.png" width="88%" alt="Per-layer K-chunk outlier ratio for Mistral-7B vs Qwen2.5-7B.">
   <br>
   <em>Why Qwen-class models need extraction: Qwen2.5's per-layer K-chunk max/median is $\sim 50\times$ wider than Mistral's.</em>
 </p>
 
 <p align="center">
-  <img src="paper/image/fig3_outlier_sweep.png" width="88%" alt="Outlier threshold C vs WikiText perplexity on Qwen2.5-7B.">
+  <img src="asset/fig3_outlier_sweep.png" width="88%" alt="Outlier threshold C vs WikiText perplexity on Qwen2.5-7B.">
   <br>
   <em>Outlier-multiplier sweep: extracting $\sim 0.5$–1% of chunks ($C{=}3$–5) closes most of the gap to fp16.</em>
 </p>
@@ -101,7 +101,7 @@ WikiText-103 sliding-window (50 windows × 2048 tokens, RTX 4090, bf16). A singl
 † gpt-oss-20b's high absolute ppl is a property of evaluating a sparse-MoE chat/reasoning model on raw text; the meaningful number is the $+3\%$ delta, not the absolute 460.
 
 <p align="center">
-  <img src="paper/image/fig1_pareto.png" width="85%" alt="Bits-per-element vs WikiText-103 perplexity Pareto frontier across four models.">
+  <img src="asset/fig1_pareto.png" width="85%" alt="Bits-per-element vs WikiText-103 perplexity Pareto frontier across four models.">
   <br>
   <em>Pareto frontier across four modern open LLMs. HQMQ+Med3× dominates naive int and TurboQuant-replica baselines across the full bit budget; the gap widens on outlier-heavy architectures.</em>
 </p>
@@ -124,7 +124,7 @@ On KIVI's own benchmark suite (CoQA / TruthfulQA / GSM8K via lm-evaluation-harne
 HQMQ at 3.79 bits sits within 1 pt of KIVI-4 on CoQA, 0.6 pt on TruthfulQA, and 2.3 pts on GSM8K. Adding Med3× crosses KIVI-4 on CoQA (67.38 vs 66.95). Below 3 bits KIVI-2's calibration starts to dominate — HQMQ is intentionally tuned for the 3–5 bit regime.
 
 <p align="center">
-  <img src="paper/image/fig_kivi_head2head.png" width="95%" alt="KIVI head-to-head: CoQA, TruthfulQA, GSM8K on Mistral-7B. HQMQ matches KIVI-4 at 16% fewer bits without calibration.">
+  <img src="asset/fig_kivi_head2head.png" width="95%" alt="KIVI head-to-head: CoQA, TruthfulQA, GSM8K on Mistral-7B. HQMQ matches KIVI-4 at 16% fewer bits without calibration.">
   <br>
   <em>HQMQ s96_r4 at 3.79 bits (amber) matches calibrated KIVI-4 (~4.5 bits, light blue) across all three tasks, and crosses it on CoQA when paired with Med3× (deep blue). KIVI-2 (calibrated, 2.5 bits) wins the sub-3-bit regime where HQMQ s24_r2 (teal) collapses on GSM8K.</em>
 </p>
@@ -152,7 +152,7 @@ Outlier extraction *alone* doesn't work — the multiplicative codebook is essen
 | HQMQ + Med3× (s24_r6) | 4.42 | **9.69** ← $\sim 1100\times$ better than int4+Med3× at fewer bits |
 
 <p align="center">
-  <img src="paper/image/fig2_qwen_downstream.png" width="80%" alt="Qwen2.5-7B zero-shot accuracy on PIQA, HellaSwag, ARC-Easy.">
+  <img src="asset/fig2_qwen_downstream.png" width="80%" alt="Qwen2.5-7B zero-shot accuracy on PIQA, HellaSwag, ARC-Easy.">
   <br>
   <em>Qwen2.5-7B zero-shot accuracy: HQMQ+Med3× matches fp16 within noise at $\sim 5$ bits, while naive int4 collapses to near-random on HellaSwag/ARC.</em>
 </p>
@@ -170,7 +170,7 @@ The honest comparison is against **dense fp16 cuDNN FlashAttention** — the upp
 Measured on a single RTX 4090. Fused decode-step latency stays **roughly constant in context length** because the per-tile codebook gather dominates streaming KV reads.
 
 <p align="center">
-  <img src="paper/image/fig5_kernel.png" width="95%" alt="Decode-step latency vs context length and the cost of not fusing decode.">
+  <img src="asset/fig5_kernel.png" width="95%" alt="Decode-step latency vs context length and the cost of not fusing decode.">
 </p>
 
 ### Memory savings
@@ -179,7 +179,7 @@ Measured on a single RTX 4090. Fused decode-step latency stays **roughly constan
 - **Llama-3-70B @ 128k:** $43$ GB → $\mathbf{8.5}$ GB — enables 70B-class long-context inference on a single 24 GB consumer GPU.
 
 <p align="center">
-  <img src="paper/image/fig4_memory.png" width="78%" alt="KV cache size vs sequence length for Llama-3-8B and Llama-3-70B at fp16 vs three HQMQ configs.">
+  <img src="asset/fig4_memory.png" width="78%" alt="KV cache size vs sequence length for Llama-3-8B and Llama-3-70B at fp16 vs three HQMQ configs.">
 </p>
 
 ---
