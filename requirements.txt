@@ -1,0 +1,9 @@
+torch>=2.10
+transformers>=5.3
+datasets>=2.20
+accelerate>=1.0
+kernels>=0.14
+huggingface_hub>=1.0
+numpy
+matplotlib
+triton>=3.4
