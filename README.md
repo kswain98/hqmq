@@ -236,7 +236,7 @@ print(hqmq.device_info())
 ## Repository layout
 
 ```
-attention/
+hqmq/
 ├── src/quantizers/     # HQMQ, Med3× wrapper, ablation baselines, Triton kernels
 ├── src/eval/           # perplexity, downstream tasks, needle, KV stats
 ├── experiments/        # numbered scripts: sweeps, ablations, kernel bench, figure makers
