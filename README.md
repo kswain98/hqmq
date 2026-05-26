@@ -277,7 +277,7 @@ Covers package import, public API surface, 24-cell algebraic properties (kissing
 ```bibtex
 @misc{swain2026hqmq,
       title={Hurwitz Quaternion Multiplicative Quantization for KV Cache Compression},
-      author={Kabir Swain and Sijie Han and Antonio Torralba},
+      author={Kabir Swain and Sijie Han and Daniel Karl I. Weidele and Mauro Martino and David Cox and Antonio Torralba},
       year={2026},
       eprint={XXXX.XXXXX},
       archivePrefix={arXiv},
