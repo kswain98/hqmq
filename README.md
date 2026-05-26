@@ -290,4 +290,4 @@ Covers package import, public API surface, 24-cell algebraic properties (kissing
 
 ## Acknowledgments
 
-We would like to thank Manel Baradad ([@mbaradad](https://github.com/mbaradad)), Adrián Rodríguez-Muñoz ([@adrianrm99](https://github.com/adrianrm99)), Linlu Qiu ([@linlu-qiu](https://github.com/linlu-qiu)), and Minyoung Huh ([@minyoungg](https://github.com/minyoungg)) for their helpful advice throughout that shaped this work
+We would like to thank Manel Baradad ([@mbaradad](https://github.com/mbaradad)), Adrián Rodríguez-Muñoz ([@adrianrm99](https://github.com/adrianrm99)), Linlu Qiu ([@linlu-qiu](https://github.com/linlu-qiu)), and Minyoung Huh ([@minyoungg](https://github.com/minyoungg)) for their helpful advice throughout that shaped this work.
