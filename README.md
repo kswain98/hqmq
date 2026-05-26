@@ -129,15 +129,21 @@ HQMQ at 3.79 bits sits within 1 pt of KIVI-4 on CoQA, 0.6 pt on TruthfulQA, and 
   <em>HQMQ s96_r4 at 3.79 bits (amber) matches calibrated KIVI-4 (~4.5 bits, light blue) across all three tasks, and crosses it on CoQA when paired with Med3× (deep blue). KIVI-2 (calibrated, 2.5 bits) wins the sub-3-bit regime where HQMQ s24_r2 (teal) collapses on GSM8K.</em>
 </p>
 
-### Long-context retrieval on RULER (Qwen3-8B, 4k context)
+### Long-context retrieval on RULER (Qwen3-8B, 4k & 8k)
 
-| Config | bits | SQuAD | Hotpot | VT |
-|---|---|---|---|---|
-| fp16 | 16.00 | 0.735 | 0.600 | 1.000 |
-| naive int4 | 4.00 | 0.428 | 0.260 | 0.228 |
-| **HQMQ s96_r6 + Med3×** | **4.89** | **0.715** | **0.680** | **1.000** |
+|  | bits | SQuAD 4k | HotpotQA 4k | VT 4k | SQuAD 8k | HotpotQA 8k | VT 8k |
+|---|---|---|---|---|---|---|---|
+| fp16 | 16.00 | 0.735 | 0.600 | 1.000 | 0.602 | 0.640 | 1.000 |
+| naive int4 | 4.00 | 0.428 | 0.260 | 0.228 | 0.163 | 0.200 | 0.204 |
+| **HQMQ s96_r6 + Med3×** | **4.89** | **0.715** | **0.680** | **1.000** | **0.602** | **0.560** | **1.000** |
 
-HQMQ preserves fp16's **perfect variable-tracking score** ($1.000 \to 1.000$) on Qwen3-8B's long context; naive int4 collapses to $0.228$ on the same task — a $4.4\times$ HQMQ-favored gap. The 8k results are deferred to a follow-up re-run (the original sweep applied a global $\text{limit}{=}50$ that consumed only the 4k slice of the combined dataset).
+HQMQ preserves fp16's **perfect variable-tracking score** at both 4k *and* 8k ($1.000 \to 1.000$ in both columns), matches fp16 on SQuAD at 8k exactly (0.602 vs 0.602), and stays competitive on HotpotQA. Naive int4 collapses on every subtask, and the fp16-to-int4 gap on SQuAD **widens** from 0.31 at 4k to 0.44 at 8k as quantization noise accumulates over longer caches. Variable tracking is the most discriminative subtask: int4 drops to 0.20 (8k) against fp16's perfect 1.00 because per-token max-scaling distortion accumulates across the context window, while HQMQ's per-chunk codebook compression preserves the small distinctions VT depends on.
+
+<p align="center">
+  <img src="asset/fig_ruler.png" width="95%" alt="RULER long-context retrieval on Qwen3-8B: SQuAD, HotpotQA, Variable Tracking at 4k and 8k. HQMQ preserves fp16 quality; naive int4 collapses, especially on VT.">
+  <br>
+  <em>HQMQ (amber) preserves fp16's perfect VT score at both context lengths and matches fp16 on SQuAD at 8k exactly. Naive int4's degradation grows worse at longer context — the int4 collapse is not a one-context-length artifact.</em>
+</p>
 
 ### Disentanglement (Qwen2.5-7B)
 
@@ -236,7 +242,7 @@ print(hqmq.device_info())
 ## Repository layout
 
 ```
-hqmq/
+attention/
 ├── src/quantizers/     # HQMQ, Med3× wrapper, ablation baselines, Triton kernels
 ├── src/eval/           # perplexity, downstream tasks, needle, KV stats
 ├── experiments/        # numbered scripts: sweeps, ablations, kernel bench, figure makers

@@ -106,6 +106,24 @@ def _qwen25_combined():
     return out
 
 
+def _pareto_filter(pts):
+    """Return the Pareto front of (bits, ppl) points: lower-bits AND lower-ppl
+    is better. Walks sorted-by-bits ascending and keeps each point whose ppl
+    is strictly better than every fewer-bit point seen so far. Drops dominated
+    configs that would otherwise appear as scattered markers off the curve.
+    """
+    if not pts:
+        return pts
+    pts_sorted = sorted(pts)  # by bits ascending, then ppl ascending
+    out = []
+    best_ppl = float("inf")
+    for b, p in pts_sorted:
+        if p < best_ppl:
+            out.append((b, p))
+            best_ppl = p
+    return out
+
+
 def _classify(nm):
     """Map a config name to one of the four plotted method-groups.
 
@@ -172,7 +190,7 @@ def fig1_pareto(out_dir):
         for grp, pts in groups.items():
             if not pts:
                 continue
-            pts.sort()
+            pts = _pareto_filter(pts)
             bits, ppls = zip(*pts)
             st = METHOD_STYLE[grp]
             draw_foreground(
@@ -230,19 +248,33 @@ def fig2_qwen_downstream(out_dir):
     x = np.arange(len(tasks))
     width = 0.16
 
+    def pretty_name(raw):
+        """Convert run names like 'hqmq_s24_r6_Med3' to 'HQMQ s24_r6 + Med3x'
+        for the legend. Keeps 'fp16' and 'int4' as-is."""
+        if raw == "fp16":
+            return "fp16"
+        if raw == "int4":
+            return "naive int4"
+        if raw.startswith("hqmq_"):
+            rest = raw[5:]  # drop 'hqmq_'
+            if "_Med3" in rest:
+                core = rest.replace("_Med3", "")
+                return f"HQMQ {core} + Med3$\\times$"
+            return f"HQMQ {rest}"
+        return raw
+
     for i, r in enumerate(results):
-        bits = r.get("bits_observed", r.get("bits_initial", 16.0))
         scores = [r["tasks"].get(t, {}).get("acc", 0.0) for t in tasks]
         color = bar_palette[i % len(bar_palette)]
         offset = (i - len(results) / 2) * width + width / 2
-        ax.bar(x + offset, scores, width, label=f"{r['name']} ({bits:.2f}b)",
+        ax.bar(x + offset, scores, width, label=pretty_name(r["name"]),
                color=color, edgecolor="white", linewidth=0.8, zorder=3)
 
     draw_reference_hline(ax, 0.25, label="25% random baseline")
     ax.set_xticks(x)
     ax.set_xticklabels(task_labels)
     ax.set_ylabel("Zero-shot accuracy")
-    ax.set_title("Qwen2.5-7B: downstream accuracy under KV quantization (n=200/task)")
+    ax.set_title("Qwen2.5-7B: downstream accuracy under KV quantization ($n{=}200$/task)")
     style_axes(ax)
     clean_legend(ax, loc="upper right", fontsize=8)
     fig.tight_layout()
@@ -282,16 +314,26 @@ def fig3_outlier_sweep(out_dir):
 
     draw_foreground(
         axes[0], mults, ppls,
-        color=OURS, label="HQMQ s192_r6 + Med", marker="o",
+        color=OURS, label="HQMQ s192_r6 + Med$C\\times$", marker="o",
         is_ours=True, smooth=True, log_x=False,
     )
     draw_reference_hline(axes[0], fp16_ppl, label=f"fp16 ({fp16_ppl:.2f})")
-    axes[0].set_xlabel("Outlier multiplier C  (chunks with norm > C x median kept at fp16)")
+    axes[0].set_xlabel(r"Outlier multiplier $C$ (chunks with $\|x\| > C\,\cdot\,r_{\mathrm{med}}$ kept at fp16)")
     axes[0].set_ylabel("Qwen2.5-7B WikiText ppl")
     axes[0].set_yscale("log")
     axes[0].set_title("Outlier threshold vs quality (HQMQ s192_r6)")
     style_axes(axes[0])
-    clean_legend(axes[0], loc="upper left")
+    clean_legend(axes[0], loc="lower right")
+    # The sweep was run at C in {5, 10, 20, 50, 100}; the paper's
+    # recommended C=3 sits to the left and reaches lower ppl (~9.0) and a
+    # higher outlier fraction (~3%). Mark C=3 as the recommended extrapolation
+    # endpoint so the figure tells a coherent story.
+    axes[0].axvline(3, color=PALETTE["guide_gray"], linestyle=":", linewidth=1.0)
+    # Place the "C=3 (rec.)" label near the bottom of the panel so it doesn't
+    # collide with the upper-left legend.
+    y_low, y_high = axes[0].get_ylim()
+    axes[0].text(3, y_low * 1.15, " $C{=}3$ (rec.)",
+                 fontsize=8, color=PALETTE["axis_gray"], ha="left", va="bottom")
 
     # Right panel is a diagnostic, not the OURS curve — use a cool color
     # so amber stays reserved for the headline ppl curve on the left.
@@ -300,9 +342,13 @@ def fig3_outlier_sweep(out_dir):
         color=PALETTE["deep_blue"], marker="s",
         smooth=True, log_x=False,
     )
-    axes[1].set_xlabel("Outlier multiplier C")
+    axes[1].set_xlabel(r"Outlier multiplier $C$")
     axes[1].set_ylabel("Observed outlier fraction (%)")
     axes[1].set_title("Empirical outlier fraction vs threshold")
+    axes[1].axvline(3, color=PALETTE["guide_gray"], linestyle=":", linewidth=1.0)
+    y1_low, y1_high = axes[1].get_ylim()
+    axes[1].text(3, y1_high * 0.78, " $C{=}3$ (rec.)",
+                 fontsize=8, color=PALETTE["axis_gray"], ha="left", va="top")
     style_axes(axes[1])
 
     fig.tight_layout()
@@ -335,9 +381,9 @@ def fig4_memory(out_dir):
 
     configs = [
         ("fp16",         PALETTE["deep_blue"], "fp16 baseline", "o", 5),
-        ("hqmq_s24_r3",  PALETTE["cyan"],      "HQMQ s24_r3 (3.17 b/elem)", "o", 5),
-        ("hqmq_s96_r4",  PALETTE["teal"],      "HQMQ s96_r4 (3.92 b/elem)", "o", 5),
-        ("hqmq_s192_r6", OURS,                 "HQMQ s192_r6 (4.67 b/elem)", "o", 5),
+        ("hqmq_s24_r3",  PALETTE["cyan"],      "HQMQ s24_r3 (3.17 bits)", "o", 5),
+        ("hqmq_s96_r4",  PALETTE["teal"],      "HQMQ s96_r4 (3.92 bits)", "o", 5),
+        ("hqmq_s192_r6", OURS,                 "HQMQ s192_r6 (4.67 bits)", "o", 5),
     ]
 
     model_styles = {

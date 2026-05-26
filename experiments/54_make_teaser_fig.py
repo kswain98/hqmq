@@ -44,13 +44,13 @@ def make_teaser(out_stem):
     # Three bar groups
     b_fp16 = ax.bar(x - w, fp16, w, color=PALETTE["deep_blue"],
                     edgecolor="white", linewidth=0.8, zorder=3,
-                    label="fp16 (16 b/elem)")
+                    label="fp16")
     b_int  = ax.bar(x,     int4, w, color=PALETTE["cyan"],
                     edgecolor="white", linewidth=0.8, zorder=3,
-                    label="naive int4 (4 b/elem)")
+                    label="naive int4")
     b_ours = ax.bar(x + w, hqmq, w, color=OURS,
                     edgecolor="white", linewidth=0.8, zorder=4,
-                    label="HQMQ + Med3x (ours, ~5 b/elem)")
+                    label="HQMQ + Med3$\\times$ (ours)")
 
     # Annotate each bar with its value
     for bars, vals in [(b_fp16, fp16), (b_int, int4), (b_ours, hqmq)]:
@@ -62,12 +62,23 @@ def make_teaser(out_stem):
                     color=PALETTE["axis_gray"])
 
     ax.set_yscale("log")
-    ax.set_ylim(3, 1e5)
+    # Tighter range: lower bound at 4 (just below Mistral fp16=5.29) and upper
+    # bound at 30,000 (above Qwen2.5 int4=17,661). This trims the empty
+    # whitespace at the top and bottom of the log axis.
+    ax.set_ylim(4, 3e4)
     ax.set_xticks(x)
     ax.set_xticklabels(models)
     ax.set_ylabel("WikiText-103 ppl  (log)")
     style_axes(ax)
     clean_legend(ax, loc="upper left", fontsize=8.5)
+
+    # Headline subtitle below the implicit title (caption carries the long
+    # version in the paper; this is for arXiv/README skim-readers).
+    fig.suptitle(
+        "HQMQ at $\\sim$5 bits matches fp16 across 4 vendors;\n"
+        "naive int4 explodes by 12–2000$\\times$ on outlier-heavy Qwen models",
+        fontsize=10.5, y=1.0, color=PALETTE["axis_gray"],
+    )
     fig.tight_layout(pad=0.3)
     save_dual(fig, out_stem)
 

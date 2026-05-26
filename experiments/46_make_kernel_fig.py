@@ -28,46 +28,47 @@ def make_kernel_fig(out_stem):
     fused     = [0.033, 0.033, 0.033]   # ms
 
     fig, axes = plt.subplots(1, 2, figsize=(11.0, 4.2))
+    xlabel = r"Context length $T_{kv}$"
 
     # ---- Left: latency-vs-context, log scale ----
-    # 3 series → 3 cool theme colors + amber accent for OURS.
     ax = axes[0]
     draw_foreground(ax, Ts, sdpa,
-                    color=PALETTE["cyan"], marker="s", markersize=6,
-                    linewidth=2.0, label="fp16 SDPA (cuDNN FlashAttention, dense K/V)",
+                    color=PALETTE["cyan"], marker="s", markersize=7,
+                    linewidth=2.0, label="fp16 SDPA (cuDNN FlashAttention)",
                     smooth=False)
     draw_foreground(ax, Ts, fakequant,
-                    color=PALETTE["deep_blue"], marker="x", markersize=8,
-                    linewidth=2.0, label="Decode-then-SDPA (fake-quant pipeline)",
+                    color=PALETTE["deep_blue"], marker="D", markersize=6,
+                    linewidth=2.0, label="Decode-then-SDPA (fake-quant)",
                     smooth=False)
     draw_foreground(ax, Ts, fused,
-                    color=OURS, marker="o", markersize=7,
+                    color=OURS, marker="o", markersize=8,
                     linewidth=2.6, label="Fused HQMQ-Attention (ours)",
                     is_ours=True, smooth=False)
 
-    ax.set_xlabel(r"KV-cache context length $T_{kv}$ (tokens)")
+    ax.set_xlabel(xlabel)
     ax.set_ylabel("Decode-step latency (ms/call)")
     ax.set_xscale("log", base=2)
     ax.set_yscale("log")
     ax.set_xticks(Ts)
-    ax.set_xticklabels([f"{t//1024}k" for t in Ts])
-    ax.set_title("Decode-step latency vs context length (Mistral-class GQA)")
+    ax.set_xticklabels([f"{t//1024}K" for t in Ts])
+    ax.set_title("Per-step decode latency", fontsize=11)
     style_axes(ax)
-    clean_legend(ax, loc="upper left")
+    # Legend placed below the title to avoid stomping the fake-quant line.
+    clean_legend(ax, loc="lower right", fontsize=8.5)
 
     # ---- Right: speedup bars ----
     ax = axes[1]
     speedups = [fq / fu for fq, fu in zip(fakequant, fused)]
-    labels = [f"{t//1024}k" for t in Ts]
+    labels = [f"{t//1024}K" for t in Ts]
     bars = ax.bar(labels, speedups, color=OURS, edgecolor="white", linewidth=0.8,
-                  zorder=3)
+                  zorder=3, width=0.55)
     for bar, val in zip(bars, speedups):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 1.5,
-                f"{val:.1f}x", ha="center", fontsize=10,
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 1.8,
+                f"{val:.1f}$\\times$", ha="center", fontsize=10,
                 color=PALETTE["axis_gray"], fontweight="bold")
-    ax.set_ylabel(r"Overhead of not fusing decode ($\times$)")
-    ax.set_xlabel(r"Context length $T_{kv}$")
-    ax.set_title("Cost of not fusing decode into attention")
+    ax.set_ylabel(r"Speedup of fused vs fake-quant ($\times$)")
+    ax.set_xlabel(xlabel)
+    ax.set_title("Fused-kernel speedup over fake-quant", fontsize=11)
     ax.set_ylim(0, max(speedups) * 1.2)
     style_axes(ax)
 

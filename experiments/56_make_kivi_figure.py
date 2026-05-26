@@ -73,10 +73,12 @@ def main():
     ours = extract_scores(run)
 
     # Configs to show, in bit-ascending order. KIVI rows come from the paper.
+    # 5 distinct colors so each bar has its own legend entry (no two bars
+    # share a swatch).
     rows = [
         # (label, bits, color, scores_dict)
         ("KIVI-2 (calib.)",      KIVI_PUBLISHED["KIVI-2 (calib.)"]["bits"],
-         PALETTE["med_blue"],    KIVI_PUBLISHED["KIVI-2 (calib.)"]),
+         PALETTE["cyan"],        KIVI_PUBLISHED["KIVI-2 (calib.)"]),
         ("HQMQ s24_r2",          ours["hqmq_s24_r2"]["bits"],
          PALETTE["teal"],        ours["hqmq_s24_r2"]),
         ("HQMQ s96_r4 (ours)",   ours["hqmq_s96_r4"]["bits"],
@@ -108,13 +110,18 @@ def main():
         colors = [r[2] for r in rows]
         bars = ax.bar(x, scores, width, color=colors,
                       edgecolor="white", linewidth=0.8, zorder=3)
-        # Annotate each bar with its score
+        # fp16 reference line first so labels (with white bbox) can mask it.
+        ax.axhline(fp16_ref[key], color=FP16, linewidth=1.0,
+                   alpha=0.7, zorder=1)
+        # Annotate each bar with its score. A white bbox breaks the fp16
+        # reference line visually so the digits stay readable when a bar's
+        # top is near fp16.
         for bar, score in zip(bars, scores):
             ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.6,
                     f"{score:.1f}", ha="center", va="bottom",
-                    fontsize=8, color=PALETTE["axis_gray"], zorder=4)
-        draw_reference_hline(ax, fp16_ref[key],
-                             label=f"fp16 ({fp16_ref[key]:.1f})")
+                    fontsize=8, color=PALETTE["axis_gray"], zorder=5,
+                    bbox=dict(facecolor="white", edgecolor="none",
+                              pad=0.6, alpha=0.95))
         ax.set_xticks(x)
         ax.set_xticklabels([f"{r[1]:.1f}b" for r in rows],
                            fontsize=8.5)
@@ -122,21 +129,26 @@ def main():
         ax.set_title(title, fontsize=10)
         ax.set_ylim(0, max(scores + [fp16_ref[key]]) * 1.18)
         style_axes(ax)
-        ax.legend(loc="lower right", fontsize=8, frameon=False)
+        # No per-panel legend.
 
-    # Build a single legend at the top for config families.
+    # Single legend at the top — one entry per distinct bar plus the fp16 line.
+    from matplotlib.lines import Line2D
     legend_handles = [
-        plt.Rectangle((0, 0), 1, 1, color=PALETTE["med_blue"],
-                      label="KIVI (calibrated)"),
+        plt.Rectangle((0, 0), 1, 1, color=PALETTE["cyan"],
+                      label="KIVI-2 (calibrated, 2.5b)"),
         plt.Rectangle((0, 0), 1, 1, color=PALETTE["teal"],
-                      label="HQMQ sub-3-bit (no calibration)"),
+                      label="HQMQ s24_r2 (2.79b)"),
         plt.Rectangle((0, 0), 1, 1, color=OURS,
-                      label="HQMQ s96_r4 @ 3.79b (ours, no calibration)"),
+                      label="HQMQ s96_r4 (3.79b, ours)"),
         plt.Rectangle((0, 0), 1, 1, color=PALETTE["deep_blue"],
-                      label="HQMQ s96_r4 + Med3$\\times$ @ 4.41b"),
+                      label="HQMQ s96_r4 + Med3$\\times$ (4.41b)"),
+        plt.Rectangle((0, 0), 1, 1, color=PALETTE["med_blue"],
+                      label="KIVI-4 (calibrated, 4.5b)"),
+        Line2D([0], [0], color=FP16, linewidth=1.0, alpha=0.7,
+               label="fp16 reference"),
     ]
     fig.legend(handles=legend_handles, loc="upper center",
-               bbox_to_anchor=(0.5, 1.06), ncol=4,
+               bbox_to_anchor=(0.5, 1.10), ncol=3,
                frameon=False, fontsize=8.5)
 
     fig.tight_layout()
