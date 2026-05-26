@@ -242,12 +242,11 @@ print(hqmq.device_info())
 ## Repository layout
 
 ```
-attention/
+hqmq/
 ├── src/quantizers/     # HQMQ, Med3× wrapper, ablation baselines, Triton kernels
 ├── src/eval/           # perplexity, downstream tasks, needle, KV stats
 ├── experiments/        # numbered scripts: sweeps, ablations, kernel bench, figure makers
-├── tests/              # CPU smoke tests + GPU correctness checks (21 + 5)
-└── paper/              # ICML 2026 LaTeX submission (text + figures + bib)
+└── tests/              # CPU smoke tests + GPU correctness checks (21 + 5)
 ```
 
 The headline scripts: `09_hqmq_sweep.py` (Pareto), `28_qwen_full_eval.py` (downstream),
