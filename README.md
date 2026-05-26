@@ -17,7 +17,7 @@
 ## TL;DR
 
 - **What.** Direction of each 4-element K/V chunk is quantized to $q_p \cdot q_s$. The 24 fixed $q_p$ are the Hurwitz group; the $S$ learned-or-random $q_s$ are per-(layer, head). Multiplicative composition yields $24S$ effective codewords from $S$ stored params.
-- **Why.** The 24-cell is simultaneously the optimal $S^3$ kissing arrangement **and** a multiplicative group. Composing it with random Haar rotations gives a rate-optimal $S^3$ packing **without calibration** (Proposition 4.1).
+- **Why.** The 24-cell is simultaneously the optimal $S^3$ arrangement **and** a multiplicative group. Composing it with random Haar rotations gives a rate-optimal $S^3$ packing **without calibration** (Proposition 4.1).
 - **Outliers.** A 1-bit per-batch median-multiplier extraction ($C{=}3$, stable across every tested architecture — no per-model tuning) handles outlier-heavy attention (Qwen, gpt-oss-class).
 - **Production.** Fused Triton attention kernel reads compressed KV in-place: $0.033$ ms/decode step at any context length, within $\sim 2.5\times$ of dense fp16 SDPA on a 5× smaller cache.
 
@@ -242,12 +242,11 @@ print(hqmq.device_info())
 ## Repository layout
 
 ```
-attention/
+hqmq/
 ├── src/quantizers/     # HQMQ, Med3× wrapper, ablation baselines, Triton kernels
 ├── src/eval/           # perplexity, downstream tasks, needle, KV stats
 ├── experiments/        # numbered scripts: sweeps, ablations, kernel bench, figure makers
-├── tests/              # CPU smoke tests + GPU correctness checks (21 + 5)
-└── paper/              # ICML 2026 LaTeX submission (text + figures + bib)
+└── tests/              # CPU smoke tests + GPU correctness checks (21 + 5)
 ```
 
 The headline scripts: `09_hqmq_sweep.py` (Pareto), `28_qwen_full_eval.py` (downstream),
@@ -278,7 +277,7 @@ Covers package import, public API surface, 24-cell algebraic properties (kissing
 ```bibtex
 @misc{swain2026hqmq,
       title={Hurwitz Quaternion Multiplicative Quantization for KV Cache Compression},
-      author={Kabir Swain and Sijie Han and Antonio Torralba},
+      author={Kabir Swain and Sijie Han and Daniel Karl I. Weidele and Mauro Martino and David Cox and Antonio Torralba},
       year={2026},
       eprint={XXXX.XXXXX},
       archivePrefix={arXiv},
@@ -291,4 +290,4 @@ Covers package import, public API surface, 24-cell algebraic properties (kissing
 
 ## Acknowledgments
 
-We would like to thank Daniel Karl I. Weidele and Mauro Martino (IBM Research) for their early collaboration and discussion that shaped this work, and Manel Baradad ([@mbaradad](https://github.com/mbaradad)), Adrián Rodríguez-Muñoz, Linlu Qiu, and Minyoung Huh ([@minyoungg](https://github.com/minyoungg)) for their helpful advice throughout.
+We would like to thank Manel Baradad ([@mbaradad](https://github.com/mbaradad)), Adrián Rodríguez-Muñoz ([@adrianrm99](https://github.com/adrianrm99)), Linlu Qiu ([@linlu-qiu](https://github.com/linlu-qiu)), and Minyoung Huh ([@minyoungg](https://github.com/minyoungg)) for their helpful advice throughout that shaped this work.
